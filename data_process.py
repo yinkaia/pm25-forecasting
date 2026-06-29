@@ -3,7 +3,7 @@ import json
 
 import joblib
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler    # 标准化数据的工具
 
 
 RAW_DATA_PATH = Path("data/raw/beijing_pm25.csv")
@@ -53,6 +53,7 @@ def main():
     print("处理后缺失数量:", after_missing)
 
     # 5. 对 cbwd 风向做 one-hot 编码
+    # 把 cbwd 风向，从 cbwd 列变成 cbwd_NE, cbwd_NW, cbwd_SE, cbwd_cv 四列
     df = pd.get_dummies(df, columns=["cbwd"], prefix="cbwd", dtype=int)
 
     print("\n" + "=" * 80)
@@ -109,12 +110,20 @@ def main():
 
     # 9. 标准化
     # 只在训练集上 fit，验证集和测试集只 transform
-    scaler = StandardScaler()
+    # 创建一个标准化器
+    scaler = StandardScaler()   # 标准化值 = (原始值 - 训练集均值) / 训练集标准差
 
+    # fit：计算训练集均值和标准差
+    # transform：对训练集、验证集和测试集做标准化
+    # fit_transform：先 fit 再 transform
+    # 只用在训练集上 fit，验证集和测试集只 transform
+    # 因为验证集和测试集的均值和标准差，应该用训练集的均值和标准差
     train_scaled_values = scaler.fit_transform(train_df[feature_cols])
     val_scaled_values = scaler.transform(val_df[feature_cols])
     test_scaled_values = scaler.transform(test_df[feature_cols])
 
+    # 把标准化后的值，转换成 DataFrame
+    # 把标准化后的数组重新包装成表格，并且把列名加回来
     train_scaled_df = pd.DataFrame(train_scaled_values, columns=feature_cols)
     val_scaled_df = pd.DataFrame(val_scaled_values, columns=feature_cols)
     test_scaled_df = pd.DataFrame(test_scaled_values, columns=feature_cols)

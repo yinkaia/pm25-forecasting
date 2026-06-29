@@ -16,6 +16,12 @@ from models import MLPRegressor, RNNRegressor, GRURegressor, LSTMRegressor, coun
 CHECKPOINT_DIR = Path("checkpoints")
 RESULTS_DIR = Path("results")
 
+# 训练过程中有喝多随机因素：
+# - DataLoader shuffle 会随机打乱样本
+# - 模型参数初始化是随机的
+# - Dropout 随机丢弃神经元
+# - GPu 上某些操作也可能有随机性
+# 固定种子后，尽量让这些随机过程变得可复现
 
 def set_seed(seed=42):
     """
@@ -84,6 +90,7 @@ def train_one_epoch(
     total_loss = 0.0
     total_samples = 0
 
+    # 创建进度条
     progress_bar = tqdm(data_loader, desc="Train", leave=False)
 
     for x_batch, y_batch in progress_bar:
@@ -114,7 +121,7 @@ def train_one_epoch(
         total_loss += loss.item() * batch_size
         total_samples += batch_size
 
-        progress_bar.set_postfix(loss=loss.item())
+        progress_bar.set_postfix(loss=loss.item())  # 在 tqdm 进度条上显示当前 batch 的 loss
 
     avg_loss = total_loss / total_samples
     return avg_loss

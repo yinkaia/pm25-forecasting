@@ -1,7 +1,7 @@
-from pathlib import Path
+from pathlib import Path    # 处理路径的工具
 
-import pandas as pd
-from ucimlrepo import fetch_ucirepo
+import pandas as pd    # 处理表格数据的工具
+from ucimlrepo import fetch_ucirepo    # 从 UCI 下载数据集的工具
 
 
 def main():

@@ -18,20 +18,21 @@ class MLPRegressor(nn.Module):
         """
         super().__init__()
 
-        in_features = seq_len * input_dim
+        in_features = seq_len * input_dim # 24 x 14
 
         self.net = nn.Sequential(
-            nn.Flatten(),
+            nn.Flatten(),   # 铺平： batch_size x 336
 
-            nn.Linear(in_features, hidden_dim),
+            nn.Linear(in_features, hidden_dim), # batch_size x 128
+            nn.ReLU(),  # < 0 ==> 0；> 0 == x。增加模型非线性能力
+            nn.Dropout(dropout),    # 随机把 20% 的神经元输出置为 0，防止模型过拟合
+
+            nn.Linear(hidden_dim, hidden_dim // 2), # batch_size x 64
             nn.ReLU(),
             nn.Dropout(dropout),
 
-            nn.Linear(hidden_dim, hidden_dim // 2),
-            nn.ReLU(),
-            nn.Dropout(dropout),
-
-            nn.Linear(hidden_dim // 2, 1),
+            nn.Linear(hidden_dim // 2, 1), # batch_size x 1
+            # 最终每个样本输出一个数
         )
 
     def forward(self, x):
@@ -65,11 +66,12 @@ class RNNRegressor(nn.Module):
         super().__init__()
 
         self.rnn = nn.RNN(
-            input_size=input_dim,
-            hidden_size=hidden_dim,
-            num_layers=num_layers,
-            batch_first=True,
+            input_size=input_dim,   # 输入特征
+            hidden_size=hidden_dim, # 隐藏状态维度
+            num_layers=num_layers,  # RNN 层数
+            batch_first=True,   # 是否第一维为 batch size
             dropout=dropout if num_layers > 1 else 0.0,
+            # 最终输出 batch_size x hidden_him
         )
 
         self.fc = nn.Linear(hidden_dim, 1)
@@ -86,8 +88,10 @@ class RNNRegressor(nn.Module):
             [num_layers, batch_size, hidden_dim]
         """
         rnn_output, h_n = self.rnn(x)
+        # rnn_output：每个时间步的隐藏状态输出 [batch_size, sql_len, hidden_dim]
+        # h_n：每一层 RNN 的最后隐藏状态 [layers_size, batch_size, hidden_dim]
 
-        # 取最后一层 RNN 的最后隐藏状态
+        # 取最后一层 RNN 的最后隐藏状态，即模型读完过去 24 小时之后，对整个历史窗口的总结
         last_hidden = h_n[-1]
 
         # 用最后隐藏状态预测下一小时 PM2.5
@@ -219,6 +223,7 @@ def main():
         batch_size=batch_size,
     )
 
+    # 取一个 batch 的数据
     x_batch, y_batch = next(iter(train_loader))
     input_dim = x_batch.shape[-1]
 
